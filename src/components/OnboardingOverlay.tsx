@@ -13,7 +13,6 @@ interface Step {
   id: StepId
   title: string
   body: string
-  highlight?: string
 }
 
 const steps: Step[] = [
@@ -25,14 +24,12 @@ const steps: Step[] = [
   {
     id: "joint",
     title: "Pick an Interactive",
-    body: "Open the panel at the top to switch between Sphere & Halo, Retrolens, and AirGlow. In Sphere & Halo, raise fingers to drive the sphere — one finger moves it, two scale it, three change color, four rotate it.",
-    highlight: "Joint",
+    body: "Open the panel at the top to switch between Sphere & Halo, Retrolens, and AirGlow. In Sphere & Halo, raise fingers to drive the sphere: one finger moves it, two scale it, three change color, four rotate it.",
   },
   {
     id: "shader",
     title: "Gesture Shortcuts",
-    body: "In Retrolens, pinch your index fingertips or fold a pinkie to cycle through 10 video filters. In AirGlow, trace the air with your index fingertip — fold a pinkie to open the color wheel.",
-    highlight: "Shader",
+    body: "In Retrolens, pinch your index fingertips or fold a pinkie to cycle through 10 video filters. In AirGlow, trace the air with your index fingertip. Fold a pinkie to open the color wheel.",
   },
 ]
 
@@ -45,6 +42,7 @@ const stepLabels: Record<StepId, string> = {
 export function OnboardingOverlay({ hasDetectedHand, isReady, onDismiss }: OnboardingOverlayProps) {
   const [stepIndex, setStepIndex] = useState(0)
   const cardRef = useRef<HTMLDivElement>(null)
+  const nextRef = useRef<HTMLButtonElement>(null)
   const step = steps[stepIndex]
 
   const goNext = useCallback(() => {
@@ -78,12 +76,30 @@ export function OnboardingOverlay({ hasDetectedHand, isReady, onDismiss }: Onboa
     }
   }, [stepIndex])
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onDismiss()
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [onDismiss])
+
+  useEffect(() => {
+    nextRef.current?.focus()
+  }, [stepIndex])
+
   return (
     <div className="onboarding-overlay">
       <div className="onboarding-backdrop" onClick={onDismiss} />
-      <div className="onboarding-card" ref={cardRef}>
+      <div
+        className="onboarding-card"
+        ref={cardRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="onboarding-title"
+      >
         <div className="onboarding-step-label">{stepLabels[step.id]}</div>
-        <h2 className="onboarding-title">{step.title}</h2>
+        <h2 className="onboarding-title" id="onboarding-title">{step.title}</h2>
         <p className="onboarding-body">{step.body}</p>
 
         {step.id === "welcome" && (
@@ -108,8 +124,8 @@ export function OnboardingOverlay({ hasDetectedHand, isReady, onDismiss }: Onboa
             <button className="onboarding-btn onboarding-btn-ghost" onClick={onDismiss}>
               Skip
             </button>
-            <button className="onboarding-btn onboarding-btn-primary" onClick={goNext}>
-              {stepIndex < steps.length - 1 ? "Next" : "Done — Explore!"}
+            <button className="onboarding-btn onboarding-btn-primary" onClick={goNext} ref={nextRef}>
+              {stepIndex < steps.length - 1 ? "Next" : "Start Exploring!"}
             </button>
           </div>
         </div>
